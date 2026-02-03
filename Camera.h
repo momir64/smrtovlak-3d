@@ -15,10 +15,9 @@ class Camera : public MouseListener {
 	glm::vec3 right;
 	glm::vec3 up;
 
-	float sensitivity;
 	float speed;
-	float yaw;
 	float pitch;
+	float yaw;
 
 	bool firstMouse;
 	double lastX;

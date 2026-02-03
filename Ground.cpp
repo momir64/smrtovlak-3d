@@ -18,7 +18,7 @@ static float vertices[] = {
 	-SIDE_LENGTH,0, SIDE_LENGTH, 0,1,0, 0,TILES_COUNT
 };
 
-static unsigned int indices[] = { 0,1,2, 2,3,0 };
+static unsigned int indices[] = { 0,2,1, 2,0,3 };
 
 Ground::Ground(const std::string& texturePath) {
 	initMesh();

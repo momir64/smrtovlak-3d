@@ -22,7 +22,7 @@ class Tracks {
 	void computeCenters(const std::vector<std::pair<float, float>>& points2d, Tracks::ElipseExtremes extremes);
 	void computePerpendiculars();
 	void buildSegmentGeometry();
-	void addQuadFace(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::vec3 n, bool flip);
+	void addQuadFace(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::vec3 n);
 	void buildSupport();
 	void addSupportColumn(const glm::vec3& topCenter, const glm::vec3& perp, std::vector<std::pair<glm::vec3, glm::vec3>>& previousBraces, float minY);
 	void addCylinder(const glm::vec3& bottom, const glm::vec3& top, float radius);

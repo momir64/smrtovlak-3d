@@ -166,11 +166,10 @@ void Tracks::computePerpendiculars() {
 	}
 }
 
-void Tracks::addQuadFace(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::vec3 n, bool flip) {
+void Tracks::addQuadFace(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::vec3 n) {
 	unsigned int b = vertices.size();
 	vertices.insert(vertices.end(), { {v0,n}, {v1,n}, {v2,n}, {v3,n} });
-	if (flip) indices.insert(indices.end(), { b, b + 1, b + 2, b + 1, b + 3, b + 2 });
-	else indices.insert(indices.end(), { b, b + 2, b + 1, b + 1, b + 2, b + 3 });
+	indices.insert(indices.end(), { b, b + 2, b + 1, b + 2, b + 3, b + 1 });
 }
 
 void Tracks::buildSegmentGeometry() {
@@ -200,11 +199,12 @@ void Tracks::buildSegmentGeometry() {
 		glm::vec3 bl1 = tl1 - surfaceNormal1 * TRACKS_THICKNESS, br1 = tr1 - surfaceNormal1 * TRACKS_THICKNESS;
 
 		glm::vec3 leftNorm = glm::normalize(p0 + p1);
+		glm::vec3 avgNormal = glm::normalize(surfaceNormal0 + surfaceNormal1);
 
-		addQuadFace(tl0, tr0, tl1, tr1, surfaceNormal0, false);
-		addQuadFace(bl0, br0, bl1, br1, -surfaceNormal0, true);
-		addQuadFace(tl0, bl0, tl1, bl1, leftNorm, false);
-		addQuadFace(tr0, br0, tr1, br1, -leftNorm, true);
+		addQuadFace(tl0, tr0, tl1, tr1, avgNormal);
+		addQuadFace(bl1, br1, bl0, br0, -avgNormal);
+		addQuadFace(tl0, tl1, bl0, bl1, leftNorm);
+		addQuadFace(tr1, tr0, br1, br0, -leftNorm);
 	}
 
 	tracksIndicesCount = indices.size();

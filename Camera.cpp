@@ -2,15 +2,19 @@
 #include "Camera.h"
 
 namespace {
-	constexpr float GROUND_HEIGHT = 3.0f;
+	constexpr float GROUND_HEIGHT = 5.0f;
+	constexpr float START_X = 18.0f, START_Z = 64.0f;
+	constexpr float START_YAW = -102.0f;
 
+	constexpr float NORMAL_SPEED = 20.0f, FLYING_SPEED = 48.0f;
+	constexpr float SENSITIVITY = 0.03f;
 }
 
 Camera::Camera() :
-	position(0.0f, GROUND_HEIGHT, 8.0f), front(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f), yaw(-90.0f),
-	pitch(0.0f), speed(20.0f), sensitivity(0.03f), lastX(0.0), lastY(0.0), firstMouse(true),
-	mode(CameraMode::GroundLevel), previousMode(CameraMode::GroundLevel), eWasPressed(false),
-	spaceWasPressed(false), followYawOffset(0.0f), followPitchOffset(0.0f) {
+	position(START_X, GROUND_HEIGHT, START_Z), front(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f), yaw(START_YAW),
+	pitch(5.0f), speed(NORMAL_SPEED), lastX(0.0), lastY(0.0), firstMouse(true),
+	mode(CameraMode::GroundLevel), previousMode(CameraMode::GroundLevel),
+	eWasPressed(false), spaceWasPressed(false), followYawOffset(0.0f), followPitchOffset(0.0f) {
 	trainPoint = { glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), };
 	updateVectors();
 }
@@ -83,8 +87,8 @@ void Camera::updateVectors() {
 
 void Camera::mouseCallback(double x, double y) {
 	if (!firstMouse) {
-		float dx = float(x - lastX) * sensitivity;
-		float dy = float(lastY - y) * sensitivity;
+		float dx = float(x - lastX) * SENSITIVITY;
+		float dy = float(lastY - y) * SENSITIVITY;
 
 		if (mode == CameraMode::FollowTrain) {
 			followYawOffset += dx;
@@ -107,6 +111,7 @@ void Camera::setMode(CameraMode newMode) {
 	mode = newMode;
 	pitch = glm::degrees(asin(front.y));
 	yaw = glm::degrees(atan2(front.z, front.x));
+	speed = mode == CameraMode::FreeFly ? FLYING_SPEED : NORMAL_SPEED;
 
 	if (mode == CameraMode::GroundLevel) {
 		position.y = GROUND_HEIGHT;

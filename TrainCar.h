@@ -9,23 +9,10 @@ class TrainCar {
 	std::vector<unsigned int> indices;
 	std::vector<Vertex> vertices;
 
-	// Car dimensions
-	float wallThickness;
-	float wheelRadius;
-	Color carColor;
-	Color stripeColor;
-	Color wheelColor;
-	Color seatColor;
-
-	// Index ranges for different colored parts
-	unsigned int bodyIndicesStart;
-	unsigned int bodyIndicesCount;
-	unsigned int stripeIndicesStart;
-	unsigned int stripeIndicesCount;
-	unsigned int seatIndicesStart;
-	unsigned int seatIndicesCount;
-	unsigned int wheelIndicesStart;
-	unsigned int wheelIndicesCount;
+	unsigned int stripeIndicesStart, stripeIndicesCount;
+	unsigned int wheelIndicesStart, wheelIndicesCount;
+	unsigned int bodyIndicesStart, bodyIndicesCount;
+	unsigned int seatIndicesStart, seatIndicesCount;
 
 	void buildMesh();
 	void buildCarBody(float bodyBottom, float bodyHeight, float halfLen, float halfWidth, float innerHalfLen, float innerHalfWidth);

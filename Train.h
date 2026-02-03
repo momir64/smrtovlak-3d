@@ -1,20 +1,25 @@
 #pragma once
-#include "Tracks.h"
+#include "Character.h"
 #include "TrainCar.h"
+#include "Tracks.h"
 #include "Shader.h"
+#include <vector>
 
 class Train {
+	std::vector<Character> characters;
 	const Tracks& tracks;
-	TrainCar car;
-	int carCount;
-	float spacing;
 	float offset;
+	TrainCar car;
+	Model belt;
+
+	OrientedPoint getCarTransform(int carIndex) const;
 
 public:
-	Train(const Tracks& tracks, int carCount = 4);
+	Train(const Tracks& tracks);
 
 	void update(float delta);
 	void draw(const Shader& shader) const;
 
 	OrientedPoint getFrontCarTransform() const;
+	void toggleBelt(int seatNumber);
 };

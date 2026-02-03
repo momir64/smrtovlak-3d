@@ -1,19 +1,23 @@
 ﻿#include "Smrtovlak.h"
-#include <glm/glm.hpp>
 #include <thread>
 #include <chrono>
 
+namespace {
+	const Color SKY_COLOR(95, 188, 235), LIGHT_COLOR(1.0f, 0.95f, 0.6f);
+	constexpr float LIGHT_X = 30.0f, LIGHT_Y = 50.0f, LIGHT_Z = 5.0f;
+
+}
+
 Smrtovlak::Smrtovlak()
 	: window(1280, 800, 800, 600, "Smrtovlak 3D", "assets/icons/icon.png", false),
+	text(window, L"Momir Stanišić SV39/2022", Bounds(46, 68, 18)),
 	shader("shaders/3d.vert", "shaders/3d.frag"),
 	ground("assets/textures/grass.jpg"),
 	tracks("smrtovlak.track"),
-	train(tracks),
-	lightColor(1.0f, 0.95f, 0.6f),
-	lightPos(30.0f, 50.0f, 5.0f) {
+	train(tracks) {
 
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+	glClearColor(SKY_COLOR.red, SKY_COLOR.green, SKY_COLOR.blue, 1.0f);
 
 	window.setResizeListener(this);
 	window.addMouseListener(&camera);
@@ -32,13 +36,15 @@ void Smrtovlak::draw() {
 	shader.setMat4("view", &camera.view()[0][0]);
 	shader.setMat4("projection", &camera.projection(aspect)[0][0]);
 
-	shader.setVec3("lightColor", lightColor.x, lightColor.y, lightColor.z);
-	shader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+	shader.setVec3("lightColor", LIGHT_COLOR.red, LIGHT_COLOR.green, LIGHT_COLOR.blue);
+	shader.setVec3("lightPos", LIGHT_X, LIGHT_Y, LIGHT_Z);
 	shader.setVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
 
 	ground.draw(shader);
 	tracks.draw(shader);
 	train.draw(shader);
+
+	text.draw();
 
 	window.swapBuffers();
 	glfwPollEvents();
@@ -46,15 +52,29 @@ void Smrtovlak::draw() {
 
 int Smrtovlak::run() {
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+	glDepthFunc(GL_LESS);
 
-	const double targetFrame = 1.0 / 75.0; // 75 FPS
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+
+	glClearColor(SKY_COLOR.red, SKY_COLOR.green, SKY_COLOR.blue, 1.0f);
+
+	const double targetFrame = 1.0 / 75.0;
 	auto lastTime = std::chrono::high_resolution_clock::now();
 
 	while (!window.shouldClose()) {
 		auto startTime = std::chrono::high_resolution_clock::now();
 		float deltaTime = std::chrono::duration<float>(startTime - lastTime).count();
 		lastTime = startTime;
+
+		for (int i = 0; i < 8; ++i) {
+			bool keyPressed = glfwGetKey(window.getWindow(), GLFW_KEY_1 + i) == GLFW_PRESS;
+			if (keyPressed && !numberKeysWasPressed[i]) {
+				train.toggleBelt(i + 1);
+			}
+			numberKeysWasPressed[i] = keyPressed;
+		}
 
 		train.update(deltaTime);
 		camera.trainPoint = train.getFrontCarTransform();

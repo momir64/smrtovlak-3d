@@ -30,13 +30,13 @@ struct TrackPoint {
 	glm::vec3 perp;
 };
 
-struct Vertex {
-	glm::vec3 position;
-	glm::vec3 normal;
-};
-
 struct OrientedPoint {
 	glm::vec3 position;
 	glm::vec3 forward;
 	glm::vec3 up;
+};
+
+struct Vertex {
+	glm::vec3 position;
+	glm::vec3 normal;
 };

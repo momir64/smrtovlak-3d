@@ -5,8 +5,8 @@
 #include "Camera.h"
 #include "Ground.h"
 #include "Tracks.h"
-#include "TrainCar.h"
 #include "Train.h"
+#include "Text.h"
 
 class Smrtovlak : public ResizeListener {
     WindowManager window;
@@ -15,9 +15,9 @@ class Smrtovlak : public ResizeListener {
     Ground ground;
     Tracks tracks;
     Train train;
+    Text text;
 
-    glm::vec3 lightColor;
-    glm::vec3 lightPos;
+    bool numberKeysWasPressed[8] = { false };
 
 public:
     Smrtovlak();
