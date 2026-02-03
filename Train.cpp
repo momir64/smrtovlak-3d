@@ -1,4 +1,6 @@
 #include "Train.h"
+#include <algorithm>
+#include <random>
 #include <cmath>
 
 namespace {
@@ -30,6 +32,8 @@ Train::Train(const Tracks& tracks)
 		characters.push_back(Character(belt, CHARACTER_MODELS[i * 2], true));
 		characters.push_back(Character(belt, CHARACTER_MODELS[i * 2 + 1], false));
 	}
+
+	shuffleCharacters();
 }
 
 OrientedPoint Train::getCarTransform(int carIndex) const {
@@ -62,6 +66,14 @@ void Train::toggleBelt(int seatNumber) {
 	seatNumber--;
 	if (seatNumber >= 0 && seatNumber < characters.size())
 		characters[seatNumber].showBelt = !characters[seatNumber].showBelt;
+}
+
+void Train::shuffleCharacters() {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::shuffle(characters.begin(), characters.end(), gen);
+	for (int i = 0; i < characters.size(); i++)
+		characters[i].frontSeat = (i % 2) == 0;
 }
 
 void Train::update(float delta) {

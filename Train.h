@@ -22,4 +22,5 @@ public:
 
 	OrientedPoint getFrontCarTransform() const;
 	void toggleBelt(int seatNumber);
+	void shuffleCharacters();
 };

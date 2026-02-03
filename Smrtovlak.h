@@ -18,6 +18,8 @@ class Smrtovlak : public ResizeListener {
     Text text;
 
     bool numberKeysWasPressed[8] = { false };
+    bool greenTintEnabled = false;
+    bool gWasPressed = false;
 
 public:
     Smrtovlak();

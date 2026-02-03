@@ -5,7 +5,6 @@
 namespace {
 	const Color SKY_COLOR(95, 188, 235), LIGHT_COLOR(1.0f, 0.95f, 0.6f);
 	constexpr float LIGHT_X = 30.0f, LIGHT_Y = 50.0f, LIGHT_Z = 5.0f;
-
 }
 
 Smrtovlak::Smrtovlak()
@@ -26,6 +25,9 @@ Smrtovlak::Smrtovlak()
 }
 
 void Smrtovlak::draw() {
+	if (greenTintEnabled) glClearColor(SKY_COLOR.red * 0.6f, SKY_COLOR.green * 1.1f, SKY_COLOR.blue * 0.5f, 1.0f);
+	else glClearColor(SKY_COLOR.red, SKY_COLOR.green, SKY_COLOR.blue, 1.0f);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	int height = window.getHeight();
@@ -39,6 +41,9 @@ void Smrtovlak::draw() {
 	shader.setVec3("lightColor", LIGHT_COLOR.red, LIGHT_COLOR.green, LIGHT_COLOR.blue);
 	shader.setVec3("lightPos", LIGHT_X, LIGHT_Y, LIGHT_Z);
 	shader.setVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
+
+	shader.setBool("screenGreenTint", greenTintEnabled);
+	shader.setVec2("resolution", (float)window.getWidth(), (float)window.getHeight());
 
 	ground.draw(shader);
 	tracks.draw(shader);
@@ -75,6 +80,12 @@ int Smrtovlak::run() {
 			}
 			numberKeysWasPressed[i] = keyPressed;
 		}
+
+		bool gPressed = glfwGetKey(window.getWindow(), GLFW_KEY_G) == GLFW_PRESS;
+		if (gPressed && !gWasPressed) {
+			greenTintEnabled = !greenTintEnabled;
+		}
+		gWasPressed = gPressed;
 
 		train.update(deltaTime);
 		camera.trainPoint = train.getFrontCarTransform();

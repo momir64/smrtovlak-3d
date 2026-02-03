@@ -15,18 +15,22 @@ namespace {
 	constexpr float CHARACTER_FORWARD_OFFSET_BACK = (CAR_LENGTH / 2.0f - WALL_THICKNESS) * BACK_SEAT_POS_RATIO + CHARACTER_BACKWARD_OFFSET;
 }
 
-Character::Character(const Model& belt, const std::string& modelPath, bool frontSeat, bool showBelt) :
-	belt(belt), showBelt(showBelt), frontSeat(frontSeat), model(Model(modelPath, CHARACTER_SCALE, CHARACTER_BRIGHTNESS)) {
+Character::Character(const Model& belt, const std::string& modelPath, bool frontSeat) :
+	belt(belt), frontSeat(frontSeat), model(Model(modelPath, CHARACTER_SCALE, CHARACTER_BRIGHTNESS)) {
 }
 
 void Character::draw(const Shader& shader, const glm::vec3& carPosition, const glm::vec3& carForward, const glm::vec3& carUp) const {
+	if (!visible) return;
+
 	float forwardOffset = frontSeat ? CHARACTER_FORWARD_OFFSET_FRONT : CHARACTER_FORWARD_OFFSET_BACK;
 
 	glm::vec3 worldPosition = carPosition + carForward * forwardOffset + carUp * CHARACTER_Y_OFFSET;
 	glm::vec3 characterForward = -carForward;
 	glm::vec3 characterUp = carUp;
 
+	if (sick) shader.setBool("applyGreenTint", true);
 	model.draw(shader, worldPosition, characterForward, characterUp);
+	if (sick) shader.setBool("applyGreenTint", false);
 
 	if (showBelt) {
 		glm::vec3 characterRight = glm::normalize(glm::cross(characterForward, characterUp));
