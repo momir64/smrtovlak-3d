@@ -148,6 +148,7 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextEngine.h" />
     <ClInclude Include="Tracks.h" />
+    <ClInclude Include="Train.h" />
     <ClInclude Include="TrainCar.h" />
     <ClInclude Include="WindowManager.h" />
   </ItemGroup>
@@ -160,6 +161,7 @@
     <ClCompile Include="Smrtovlak.cpp" />
     <ClCompile Include="TextEngine.cpp" />
     <ClCompile Include="Tracks.cpp" />
+    <ClCompile Include="Train.cpp" />
     <ClCompile Include="TrainCar.cpp" />
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>

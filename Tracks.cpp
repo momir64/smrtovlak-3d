@@ -13,11 +13,12 @@ namespace {
 	constexpr float CAR_LENGTH = 6.0f, WHEEL_LENGTH_OFFSET_RATIO = 0.32f;
 	constexpr float WHEEL_BASE = CAR_LENGTH * WHEEL_LENGTH_OFFSET_RATIO * 2;
 
-	constexpr float ELLIPSE_A = 40.0f, ELLIPSE_B = 20.0f;
+	constexpr float SIZE = 8.0f;
+	constexpr float ELLIPSE_A = 6.0f * SIZE, ELLIPSE_B = 3.0f * SIZE;
 
 	constexpr float TRACKS_THICKNESS = 0.36f, TRACKS_HALF_WIDTH = 1.5f;
 	const Color TRACKS_COLOR(0.8f, 0.4f, 0.1f);
-	constexpr float SCALE_HEIGHT = 40.0f;
+	constexpr float SCALE_HEIGHT = 8.0f * SIZE;
 
 	constexpr float SUPPORT_RADIUS = 0.1f, SUPPORT_SPACING = 1.5f;
 	constexpr float SUPPORT_VERTICAL_SPACING = 1.8f;
@@ -213,18 +214,19 @@ void Tracks::buildSupport() {
 	if (points.size() < 2) return;
 	std::vector<std::pair<glm::vec3, glm::vec3>> braces;
 
-	float length = 0.0f, minY = -1.0f;
-	for (size_t i = 0; i < points.size() - 1; ++i) {
-		glm::vec3 start = points[i].center, end = points[i + 1].center;
+	float length = SUPPORT_SPACING, minY = -1.0f;
+	for (size_t i = 0; i <= points.size(); ++i) {
+		size_t ix = i % points.size();
+		glm::vec3 start = points[ix].center, end = points[(i + 1) % points.size()].center;
 		length += glm::distance(glm::vec2(start.x, start.z), glm::vec2(end.x, end.z));
-		if (i > 0) points[i].distance = points[i - 1].distance + glm::distance(start, end);
+		if (ix > 0) points[i].distance = points[i - 1].distance + glm::distance(start, end);
 
 		if (minY < 0 || start.y < minY)
 			minY = start.y;
 
 		if (length > SUPPORT_SPACING) {
 			start.y -= TRACKS_THICKNESS * 0.75f;
-			addSupportColumn(start, glm::normalize(points[i].perp), braces, minY);
+			addSupportColumn(start, glm::normalize(points[ix].perp), braces, minY);
 			length = 0.0f;
 			minY = -1.0f;
 		}

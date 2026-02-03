@@ -8,7 +8,7 @@ Smrtovlak::Smrtovlak()
 	shader("shaders/3d.vert", "shaders/3d.frag"),
 	ground("assets/textures/grass.jpg"),
 	tracks("smrtovlak.track"),
-	car(),
+	train(tracks),
 	lightColor(1.0f, 0.95f, 0.6f),
 	lightPos(30.0f, 50.0f, 5.0f) {
 
@@ -20,8 +20,6 @@ Smrtovlak::Smrtovlak()
 
 	glfwSetInputMode(window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
-
-static int i = -50;
 
 void Smrtovlak::draw() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -40,13 +38,7 @@ void Smrtovlak::draw() {
 
 	ground.draw(shader);
 	tracks.draw(shader);
-
-	for (int j = 0; j < 4; j++) {
-		int x = (tracks.points.size() + i - 400 * j) % tracks.points.size();
-		car.draw(shader, tracks.points[x].center, tracks.points[x].perp, tracks.points[x].pitch);
-	}
-
-	i = (i + 20) % tracks.points.size();
+	train.draw(shader);
 
 	window.swapBuffers();
 	glfwPollEvents();
@@ -64,7 +56,10 @@ int Smrtovlak::run() {
 		float deltaTime = std::chrono::duration<float>(startTime - lastTime).count();
 		lastTime = startTime;
 
+		train.update(deltaTime);
+		camera.trainPoint = train.getFrontCarTransform();
 		camera.update(window.getWindow(), deltaTime);
+
 		draw();
 
 		auto endTime = std::chrono::high_resolution_clock::now();

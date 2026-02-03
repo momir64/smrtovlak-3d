@@ -6,6 +6,7 @@
 #include "Ground.h"
 #include "Tracks.h"
 #include "TrainCar.h"
+#include "Train.h"
 
 class Smrtovlak : public ResizeListener {
     WindowManager window;
@@ -13,7 +14,7 @@ class Smrtovlak : public ResizeListener {
     Shader shader;
     Ground ground;
     Tracks tracks;
-    TrainCar car;
+    Train train;
 
     glm::vec3 lightColor;
     glm::vec3 lightPos;
