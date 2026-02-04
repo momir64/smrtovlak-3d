@@ -1,14 +1,14 @@
 ## Usage
-- `Esc` – Quit the application  
-- `F` – Toggle fullscreen  
-- `E` – Toggle free-fly camera mode  
-- `Space` – Add a new passenger  
-- `Enter` – Start the ride (requires all passengers to be buckled up)  
-- `Numbers` – Buckle passengers / make them sick during the ride  
-- `WASD` – Move the camera  
-- `Mouse` – Rotate the camera  
+- `Esc` â€“ Quit the application  
+- `F` â€“ Toggle fullscreen  
+- `E` â€“ Toggle free-fly camera mode  
+- `Space` â€“ Add a new passenger  
+- `Enter` â€“ Start the ride (requires all passengers to be buckled up)  
+- `Numbers` â€“ Buckle passengers / make them sick during the ride  
+- `WASD` â€“ Move the camera  
+- `Mouse` â€“ Rotate the camera  
 
-## Track Loading
+## Track loading
 The track is loaded from the `smrtovlak.track` file.  
 You can create this file using the designer from the [smrtovlak 2D](https://github.com/momir64/smrtovlak) project.
 
