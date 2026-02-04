@@ -87,9 +87,9 @@ void Model::loadOBJ(const std::string& path) {
 	}
 
 	std::vector<glm::vec3> positions, normals;
-	std::unordered_map<std::string, Material> materials = { {"default", {}} };
 	std::unordered_map<std::string, std::vector<Vertex>> groupVertices;
 	std::unordered_map<std::string, std::vector<unsigned int>> groupIndices;
+	std::unordered_map<std::string, Material> materials = { {"default", {}} };
 	std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>> groupVertexCache;
 	std::string currentMaterial = "default";
 
@@ -223,7 +223,8 @@ void Model::draw(const Shader& shader, const glm::vec3& position, const glm::vec
 	shader.setMat4("model", glm::value_ptr(model));
 
 	for (const auto& group : meshGroups) {
-		shader.setVec3("baseColor", (group.material.diffuse * brightness).r, (group.material.diffuse * brightness).g, (group.material.diffuse * brightness).b);
+		glm::vec3 color = group.material.diffuse * brightness;
+		shader.setVec3("baseColor", color.r, color.g, color.b);
 		glBindVertexArray(group.VAO);
 		glDrawElements(GL_TRIANGLES, group.indexCount, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);

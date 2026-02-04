@@ -7,10 +7,10 @@ namespace {
 	constexpr float TRAIN_START_OFFSET = -3.8f, TRAIN_CAR_SPACE = 8.6f;
 	constexpr int TRAIN_CAR_COUNT = 4;
 
-	constexpr float TRAIN_MIN_SPEED = 7.2f, TRAIN_MAX_SPEED = 64.0f, TRAIN_MAX_SPEED_SICK = 5.0f;
-	constexpr float FINISH_SLOWDOWN_DISTANCE = 80.0f, FINISH_SLOWDOWN_DISTANCE_SICK = 40.0f;
-	constexpr float TRAIN_FLAT_ACCEL = 10.0f, TRAIN_SLOPE_FACTOR = 24.0f;
-	constexpr float SLOWDOWN_DISTANCE = 50.0f, FINISHED_DISTANCE = 0.05f;
+	constexpr float TRAIN_MIN_SPEED = 3.8f, TRAIN_MAX_SPEED = 64.0f, TRAIN_MAX_SPEED_SICK = 8.0f;
+	constexpr float SLOWDOWN_DISTANCE = 10.0f, FINISH_SLOWDOWN_DISTANCE_SICK = 18.0f;
+	constexpr float FINISH_SLOWDOWN_DISTANCE = 42.0f, FINISHED_DISTANCE = 0.05f;
+	constexpr float TRAIN_FLAT_ACCEL = 7.0f, TRAIN_SLOPE_FACTOR = 32.0f;
 
 	constexpr float CAMERA_FORWARD_OFFSET = 1.0f, CAMERA_HEIGHT_OFFSET = 5.0f;
 
@@ -31,7 +31,7 @@ namespace {
 
 Train::Train(const Tracks& tracks)
 	: offset(TRAIN_START_OFFSET), currentSpeed(0.0f), sleepTimer(0.0f), preStopSpeed(0.0f), stopDistance(0.0f),
-	tracks(tracks), belt(Model(BELT_MODEL_PATH, BELT_SCALE, BELT_BRIGHTNESS)) {
+	tracks(tracks), belt(Model(BELT_MODEL_PATH, BELT_SCALE, BELT_BRIGHTNESS)), charactersCount(0) {
 
 	for (int i = 0; i < TRAIN_CAR_COUNT; i++) {
 		characters.push_back(Character(belt, CHARACTER_MODELS[i * 2], true));
@@ -67,16 +67,10 @@ OrientedPoint Train::getCarTransform(int carIndex) const {
 	return { point.center, forward, up };
 }
 
-OrientedPoint Train::getFrontCarTransform() const {
+OrientedPoint Train::getCameraTransform() const {
 	OrientedPoint transform = getCarTransform(0);
 	transform.position += transform.forward * CAMERA_FORWARD_OFFSET + transform.up * CAMERA_HEIGHT_OFFSET;
 	return transform;
-}
-
-void Train::toggleBelt(int seatNumber) {
-	seatNumber--;
-	if (seatNumber >= 0 && seatNumber < characters.size())
-		characters[seatNumber].showBelt = !characters[seatNumber].showBelt;
 }
 
 void Train::shuffleCharacters() {
@@ -85,6 +79,64 @@ void Train::shuffleCharacters() {
 	std::shuffle(characters.begin(), characters.end(), gen);
 	for (int i = 0; i < characters.size(); i++)
 		characters[i].frontSeat = (i % 2) == 0;
+}
+
+void Train::buckleUp(int seatNumber) {
+	if (seatNumber >= 0 && seatNumber < charactersCount)
+		characters[seatNumber].showBelt = true;
+}
+
+TrainMode Train::getMode() const {
+	return mode;
+}
+
+void Train::setMode(TrainMode newMode) {
+	mode = newMode;
+}
+
+void Train::addCharacter() {
+	if (charactersCount < characters.size()) {
+		characters[charactersCount].visible = true;
+		charactersCount++;
+	}
+}
+
+int Train::getCharactersCount() const {
+	return charactersCount;
+}
+
+void Train::start() {
+	if (charactersCount == 0) return;
+	for (int i = 0; i < charactersCount; i++)
+		if (!characters[i].showBelt)
+			return;
+	mode = TrainMode::RUNNING;
+}
+
+void Train::makeSick(int seatNumber) {
+	if (seatNumber < 0 || seatNumber >= charactersCount) return;
+	stopDistance = std::min(offset + SLOWDOWN_DISTANCE, tracks.points.back().distance + TRAIN_START_OFFSET);
+	characters[seatNumber].sick = true;
+	mode = TrainMode::EMERGENCY_STOP;
+	preStopSpeed = currentSpeed;
+}
+
+void Train::reset() {
+	offset = TRAIN_START_OFFSET;
+	mode = TrainMode::FINISHED;
+	currentSpeed = 0.0f;
+	preStopSpeed = 0.0f;
+	stopDistance = 0.0f;
+	sleepTimer = 0.0f;
+	charactersCount = 0;
+
+	for (auto& character : characters) {
+		character.showBelt = false;
+		character.visible = false;
+		character.sick = false;
+	}
+
+	shuffleCharacters();
 }
 
 void Train::update(float delta) {
@@ -127,11 +179,7 @@ void Train::update(float delta) {
 				if (remaining <= FINISHED_DISTANCE) {
 					carSpeeds[i] = 0.0f;
 					offset = endDist;
-
-					for (auto& chr : characters)
-						if (chr.showBelt) chr.showBelt = false;
-
-					mode = TrainMode::WAITING;
+					reset();
 					return;
 				}
 			} else {
@@ -181,10 +229,7 @@ void Train::update(float delta) {
 			if (remaining <= FINISHED_DISTANCE) {
 				currentSpeed = 0.0f;
 				offset = endDist;
-				for (auto& chr : characters)
-					if (chr.showBelt) chr.showBelt = false;
-
-				mode = TrainMode::WAITING;
+				reset();
 				return;
 			}
 		} else {
@@ -195,13 +240,7 @@ void Train::update(float delta) {
 	}
 }
 
-void Train::triggerEmergencyStop(float distance) {
-	stopDistance = distance;
-	preStopSpeed = currentSpeed;
-	mode = TrainMode::EMERGENCY_STOP;
-}
-
-void Train::draw(const Shader& shader) const {
+void Train::draw(const Shader& shader, bool cameraInTrain) const {
 	if (tracks.points.empty()) return;
 
 	float totalLength = tracks.points.back().distance;
@@ -224,7 +263,7 @@ void Train::draw(const Shader& shader) const {
 		OrientedPoint carTransform = getCarTransform(i);
 		int frontSeatIndex = i * 2, backSeatIndex = i * 2 + 1;
 		if (frontSeatIndex < (int)characters.size())
-			characters[frontSeatIndex].draw(shader, carTransform.position, carTransform.forward, carTransform.up);
+			characters[frontSeatIndex].draw(shader, carTransform.position, carTransform.forward, carTransform.up, frontSeatIndex == 0 && cameraInTrain);
 		if (backSeatIndex < (int)characters.size())
 			characters[backSeatIndex].draw(shader, carTransform.position, carTransform.forward, carTransform.up);
 	}

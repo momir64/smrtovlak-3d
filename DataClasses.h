@@ -1,26 +1,13 @@
 #pragma once
 #include <glm/glm.hpp>
 
-class Color {
-public:
-	float red;
-	float green;
-	float blue;
-
-	Color(float red = 0, float green = 0, float blue = 0);
-	Color(int red, int green, int blue);
-};
-
-class Bounds {
-public:
+struct Bounds {
 	float x;
 	float y;
 	float width;
-	float height;
-	float angle;
-	bool flip;
-
-	Bounds(float x, float y, float width, float height = 0, float angle = 0, bool flip = false);
+	float height = 0;
+	float angle = 0;
+	bool flip = false;
 };
 
 struct TrackPoint {

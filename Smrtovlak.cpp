@@ -3,12 +3,13 @@
 #include <chrono>
 
 namespace {
-	const Color SKY_COLOR(95, 188, 235), LIGHT_COLOR(1.0f, 0.95f, 0.6f);
 	constexpr float LIGHT_X = 30.0f, LIGHT_Y = 50.0f, LIGHT_Z = 5.0f;
+	constexpr glm::vec3 SKY_COLOR = glm::vec3(95, 188, 235) / 255.0f;
+	constexpr glm::vec3	LIGHT_COLOR(1.0f, 0.95f, 0.6f);
 }
 
 Smrtovlak::Smrtovlak()
-	: window(1280, 800, 800, 600, "Smrtovlak 3D", "assets/icons/icon.png", false),
+	: window(1280, 800, 800, 600, "Smrtovlak 3D", "assets/icons/icon.png", true),
 	text(window, L"Momir Stanišić SV39/2022", Bounds(46, 68, 18)),
 	shader("shaders/3d.vert", "shaders/3d.frag"),
 	ground("assets/textures/grass.jpg"),
@@ -16,17 +17,52 @@ Smrtovlak::Smrtovlak()
 	train(tracks) {
 
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(SKY_COLOR.red, SKY_COLOR.green, SKY_COLOR.blue, 1.0f);
+	glClearColor(SKY_COLOR.r, SKY_COLOR.g, SKY_COLOR.b, 1.0f);
 
 	window.setResizeListener(this);
+	window.addKeyboardListener(this);
 	window.addMouseListener(&camera);
 
 	glfwSetInputMode(window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
+void Smrtovlak::keyboardCallback(GLFWwindow& win, int key, int scancode, int action, int mods) {
+	if (action != GLFW_PRESS) return;
+
+	CameraMode cameraMode = camera.getMode();
+	TrainMode trainMode = train.getMode();
+
+	if (key >= GLFW_KEY_1 && key <= GLFW_KEY_8) {
+		if (trainMode == TrainMode::WAITING) {
+			train.buckleUp(key - GLFW_KEY_1);
+		} else if (trainMode == TrainMode::RUNNING) {
+			train.makeSick(key - GLFW_KEY_1);
+			if (key - GLFW_KEY_1 == 0)
+				greenTintEnabled = true;
+		}
+	} else if (key == GLFW_KEY_SPACE && trainMode == TrainMode::WAITING) {
+		if (cameraMode == CameraMode::GroundLevel)
+			camera.setMode(CameraMode::FollowTrain);
+		train.addCharacter();
+	} else if (key == GLFW_KEY_E) {
+		if (cameraMode != CameraMode::FreeFly)
+			camera.setMode(CameraMode::FreeFly);
+		else if (train.getCharactersCount() > 0)
+			camera.setMode(CameraMode::FollowTrain);
+		else
+			camera.setMode(CameraMode::GroundLevel);
+	} else if (key == GLFW_KEY_ENTER && trainMode == TrainMode::WAITING) {
+		train.start();
+	}
+}
+
 void Smrtovlak::draw() {
-	if (greenTintEnabled) glClearColor(SKY_COLOR.red * 0.6f, SKY_COLOR.green * 1.1f, SKY_COLOR.blue * 0.5f, 1.0f);
-	else glClearColor(SKY_COLOR.red, SKY_COLOR.green, SKY_COLOR.blue, 1.0f);
+	bool cameraInTrain = camera.getMode() == CameraMode::FollowTrain;
+
+	if (greenTintEnabled && cameraInTrain)
+		glClearColor(SKY_COLOR.r * 0.6f, SKY_COLOR.g * 1.1f, SKY_COLOR.b * 0.5f, 1.0f);
+	else
+		glClearColor(SKY_COLOR.r, SKY_COLOR.g, SKY_COLOR.b, 1.0f);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -38,16 +74,16 @@ void Smrtovlak::draw() {
 	shader.setMat4("view", &camera.view()[0][0]);
 	shader.setMat4("projection", &camera.projection(aspect)[0][0]);
 
-	shader.setVec3("lightColor", LIGHT_COLOR.red, LIGHT_COLOR.green, LIGHT_COLOR.blue);
+	shader.setVec3("lightColor", LIGHT_COLOR.r, LIGHT_COLOR.g, LIGHT_COLOR.b);
 	shader.setVec3("lightPos", LIGHT_X, LIGHT_Y, LIGHT_Z);
 	shader.setVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
 
-	shader.setBool("screenGreenTint", greenTintEnabled);
+	shader.setBool("screenGreenTint", greenTintEnabled && cameraInTrain);
 	shader.setVec2("resolution", (float)window.getWidth(), (float)window.getHeight());
 
 	ground.draw(shader);
 	tracks.draw(shader);
-	train.draw(shader);
+	train.draw(shader, cameraInTrain);
 
 	text.draw();
 
@@ -63,7 +99,7 @@ int Smrtovlak::run() {
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
-	glClearColor(SKY_COLOR.red, SKY_COLOR.green, SKY_COLOR.blue, 1.0f);
+	glClearColor(SKY_COLOR.r, SKY_COLOR.g, SKY_COLOR.b, 1.0f);
 
 	const double targetFrame = 1.0 / 75.0;
 	auto lastTime = std::chrono::high_resolution_clock::now();
@@ -73,22 +109,15 @@ int Smrtovlak::run() {
 		float deltaTime = std::chrono::duration<float>(startTime - lastTime).count();
 		lastTime = startTime;
 
-		for (int i = 0; i < 8; ++i) {
-			bool keyPressed = glfwGetKey(window.getWindow(), GLFW_KEY_1 + i) == GLFW_PRESS;
-			if (keyPressed && !numberKeysWasPressed[i]) {
-				train.toggleBelt(i + 1);
-			}
-			numberKeysWasPressed[i] = keyPressed;
-		}
-
-		bool gPressed = glfwGetKey(window.getWindow(), GLFW_KEY_G) == GLFW_PRESS;
-		if (gPressed && !gWasPressed) {
-			greenTintEnabled = !greenTintEnabled;
-		}
-		gWasPressed = gPressed;
-
 		train.update(deltaTime);
-		camera.trainPoint = train.getFrontCarTransform();
+
+		if (train.getMode() == TrainMode::FINISHED) {
+			train.setMode(TrainMode::WAITING);
+			greenTintEnabled = false;
+			camera.reset();
+		}
+
+		camera.trainPoint = train.getCameraTransform();
 		camera.update(window.getWindow(), deltaTime);
 
 		draw();

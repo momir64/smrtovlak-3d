@@ -6,8 +6,8 @@
 
 
 namespace {
-	constexpr float SIDE_LENGTH = 100.0f;
-	constexpr int TILES_COUNT = 20;
+	constexpr float SIDE_LENGTH = 300.0f;
+	constexpr int TILES_COUNT = 60;
 }
 
 

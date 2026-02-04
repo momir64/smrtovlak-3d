@@ -17,12 +17,12 @@ namespace {
 	constexpr float ELLIPSE_A = 6.0f * SIZE, ELLIPSE_B = 3.0f * SIZE;
 
 	constexpr float TRACKS_THICKNESS = 0.36f, TRACKS_HALF_WIDTH = 1.5f;
-	const Color TRACKS_COLOR(0.8f, 0.4f, 0.1f);
+	constexpr glm::vec3 TRACKS_COLOR(0.8f, 0.4f, 0.1f);
 	constexpr float SCALE_HEIGHT = 8.0f * SIZE;
 
 	constexpr float SUPPORT_RADIUS = 0.1f, SUPPORT_SPACING = 1.5f;
 	constexpr float SUPPORT_VERTICAL_SPACING = 1.8f;
-	const Color SUPPORT_COLOR(0.5f, 0.5f, 0.5f);
+	constexpr glm::vec3 SUPPORT_COLOR(0.5f, 0.5f, 0.5f);
 	constexpr int SUPPORT_NUM_SIDES = 16;
 }
 
@@ -54,11 +54,11 @@ void Tracks::draw(const Shader& shader) const {
 	shader.setMat4("model", glm::value_ptr(model));
 	shader.setBool("useTexture", false);
 
-	shader.setVec3("baseColor", TRACKS_COLOR.red, TRACKS_COLOR.green, TRACKS_COLOR.blue);
+	shader.setVec3("baseColor", TRACKS_COLOR.r, TRACKS_COLOR.g, TRACKS_COLOR.b);
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, tracksIndicesCount, GL_UNSIGNED_INT, 0);
 
-	shader.setVec3("baseColor", SUPPORT_COLOR.red, SUPPORT_COLOR.green, SUPPORT_COLOR.blue);
+	shader.setVec3("baseColor", SUPPORT_COLOR.r, SUPPORT_COLOR.g, SUPPORT_COLOR.b);
 	auto supportStart = (void*)(tracksIndicesCount * sizeof(unsigned int));
 	glDrawElements(GL_TRIANGLES, indices.size() - tracksIndicesCount, GL_UNSIGNED_INT, supportStart);
 
@@ -215,18 +215,17 @@ void Tracks::buildSupport() {
 	std::vector<std::pair<glm::vec3, glm::vec3>> braces;
 
 	float length = SUPPORT_SPACING, minY = -1.0f;
-	for (size_t i = 0; i <= points.size(); ++i) {
-		size_t ix = i % points.size();
-		glm::vec3 start = points[ix].center, end = points[(i + 1) % points.size()].center;
+	for (size_t i = 0; i < points.size(); ++i) {
+		glm::vec3 start = points[i].center, end = points[(i + 1) % points.size()].center;
 		length += glm::distance(glm::vec2(start.x, start.z), glm::vec2(end.x, end.z));
-		if (ix > 0) points[i].distance = points[i - 1].distance + glm::distance(start, end);
+		if (i > 0) points[i].distance = points[i - 1].distance + glm::distance(start, end);
 
 		if (minY < 0 || start.y < minY)
 			minY = start.y;
 
-		if (length > SUPPORT_SPACING) {
+		if (length > SUPPORT_SPACING || i == points.size() - 1) {
 			start.y -= TRACKS_THICKNESS * 0.75f;
-			addSupportColumn(start, glm::normalize(points[ix].perp), braces, minY);
+			addSupportColumn(start, glm::normalize(points[i].perp), braces, minY);
 			length = 0.0f;
 			minY = -1.0f;
 		}

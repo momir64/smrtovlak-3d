@@ -30,8 +30,8 @@ class Model {
 	std::unordered_map<std::string, Material> loadMTL(const std::string& path);
 
 public:
-	float scale;
 	float brightness;
+	float scale;
 
 	Model(const std::string& objPath, float scale = 1.0f, float brightness = 1.0f);
 	~Model();

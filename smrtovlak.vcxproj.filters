@@ -86,9 +86,6 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DataClasses.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Smrtovlak.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

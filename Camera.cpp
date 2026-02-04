@@ -1,45 +1,26 @@
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include "Camera.h"
 
 namespace {
-	constexpr float GROUND_HEIGHT = 5.0f;
-	constexpr float START_X = 18.0f, START_Z = 64.0f;
-	constexpr float START_YAW = -102.0f;
+	constexpr float START_X = 18.0f, START_Y = 5.0f, START_Z = 64.0f;
+	constexpr float START_YAW = -102.0f, START_PITCH = 5.0f;
+	constexpr float WORLD_LIMIT = 150.0f;
 
 	constexpr float NORMAL_SPEED = 20.0f, FLYING_SPEED = 48.0f;
 	constexpr float SENSITIVITY = 0.03f;
 }
 
 Camera::Camera() :
-	position(START_X, GROUND_HEIGHT, START_Z), front(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f), yaw(START_YAW),
-	pitch(5.0f), speed(NORMAL_SPEED), lastX(0.0), lastY(0.0), firstMouse(true),
+	position(START_X, START_Y, START_Z), front(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f), yaw(START_YAW),
+	pitch(START_PITCH), speed(NORMAL_SPEED), lastX(0.0), lastY(0.0), firstMouse(true),
 	mode(CameraMode::GroundLevel), previousMode(CameraMode::GroundLevel),
-	eWasPressed(false), spaceWasPressed(false), followYawOffset(0.0f), followPitchOffset(0.0f) {
+	followYawOffset(0.0f), followPitchOffset(0.0f) {
 	trainPoint = { glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), };
 	updateVectors();
 }
 
 void Camera::update(GLFWwindow* window, float deltaTime) {
-	bool spacePressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-	bool ePressed = glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS;
-
-	if (spacePressed && !spaceWasPressed && mode != CameraMode::FreeFly) {
-		if (mode == CameraMode::GroundLevel) setMode(CameraMode::FollowTrain);
-		else if (mode == CameraMode::FollowTrain) setMode(CameraMode::GroundLevel);
-	}
-
-	spaceWasPressed = spacePressed;
-
-	if (ePressed && !eWasPressed) {
-		if (mode == CameraMode::FreeFly) {
-			setMode(previousMode);
-		} else {
-			previousMode = mode;
-			setMode(CameraMode::FreeFly);
-		}
-	}
-	eWasPressed = ePressed;
-
 	float velocity = speed * deltaTime;
 
 	auto key = [&](int k) { return glfwGetKey(window, k) == GLFW_PRESS; };
@@ -52,7 +33,9 @@ void Camera::update(GLFWwindow* window, float deltaTime) {
 		if (key(GLFW_KEY_A)) position -= velocity * flatRight;
 		if (key(GLFW_KEY_D)) position += velocity * flatRight;
 
-		position.y = GROUND_HEIGHT;
+		position.y = START_Y;
+		position.x = std::clamp(position.x, -WORLD_LIMIT, WORLD_LIMIT);
+		position.z = std::clamp(position.z, -WORLD_LIMIT, WORLD_LIMIT);
 	} else if (mode == CameraMode::FollowTrain) {
 		position = trainPoint.position;
 
@@ -114,7 +97,7 @@ void Camera::setMode(CameraMode newMode) {
 	speed = mode == CameraMode::FreeFly ? FLYING_SPEED : NORMAL_SPEED;
 
 	if (mode == CameraMode::GroundLevel) {
-		position.y = GROUND_HEIGHT;
+		position.y = START_Y;
 	} else if (mode == CameraMode::FollowTrain) {
 		followYawOffset = 0.0f;
 		followPitchOffset = 0.0f;
@@ -135,4 +118,15 @@ glm::mat4 Camera::view() const {
 
 glm::vec3 Camera::getPosition() const {
 	return position;
+}
+
+void Camera::reset() {
+	position = glm::vec3(START_X, START_Y, START_Z);
+	mode = CameraMode::GroundLevel;
+	followPitchOffset = 0.0f;
+	followYawOffset = 0.0f;
+	speed = NORMAL_SPEED;
+	pitch = START_PITCH;
+	yaw = START_YAW;
+	updateVectors();
 }

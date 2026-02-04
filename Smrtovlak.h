@@ -8,7 +8,7 @@
 #include "Train.h"
 #include "Text.h"
 
-class Smrtovlak : public ResizeListener {
+class Smrtovlak : public ResizeListener, public KeyboardListener {
     WindowManager window;
     Camera camera;
     Shader shader;
@@ -17,9 +17,7 @@ class Smrtovlak : public ResizeListener {
     Train train;
     Text text;
 
-    bool numberKeysWasPressed[8] = { false };
     bool greenTintEnabled = false;
-    bool gWasPressed = false;
 
 public:
     Smrtovlak();
@@ -27,4 +25,5 @@ public:
     int run();
     void draw();
     void resizeCallback(GLFWwindow& window) override;
+    void keyboardCallback(GLFWwindow& window, int key, int scancode, int action, int mods) override;
 };

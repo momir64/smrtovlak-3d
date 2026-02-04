@@ -18,10 +18,10 @@ namespace {
 	constexpr float SEAT_BACK_HEIGHT = 1.8f, SEAT_BACK_THICKNESS = 0.25f;
 	constexpr float SEAT_DEPTH = 1.5f, SEAT_HEIGHT = 1.3f;
 
-	const Color STRIPE_COLOR(1.0f, 0.85f, 0.1f);
-	const Color WHEEL_COLOR(0.1f, 0.1f, 0.1f);
-	const Color CAR_COLOR(0.85f, 0.1f, 0.1f);
-	const Color SEAT_COLOR(0.5f, 0.5f, 0.5f);
+	constexpr glm::vec3 STRIPE_COLOR(1.0f, 0.85f, 0.1f);
+	constexpr glm::vec3 WHEEL_COLOR(0.1f, 0.1f, 0.1f);
+	constexpr glm::vec3 CAR_COLOR(0.85f, 0.1f, 0.1f);
+	constexpr glm::vec3 SEAT_COLOR(0.5f, 0.5f, 0.5f);
 }
 
 TrainCar::TrainCar() :
@@ -221,7 +221,7 @@ void TrainCar::draw(const Shader& shader, const glm::vec3& position, const glm::
 	shader.setBool("useTexture", false);
 	glBindVertexArray(VAO);
 
-	struct { const Color& color; unsigned start, count; } parts[] = {
+	struct { const glm::vec3& color; unsigned start, count; } parts[] = {
 		{CAR_COLOR, bodyIndicesStart, bodyIndicesCount},
 		{STRIPE_COLOR, stripeIndicesStart, stripeIndicesCount},
 		{SEAT_COLOR, seatIndicesStart, seatIndicesCount},
@@ -229,7 +229,7 @@ void TrainCar::draw(const Shader& shader, const glm::vec3& position, const glm::
 	};
 
 	for (const auto& part : parts) {
-		shader.setVec3("baseColor", part.color.red, part.color.green, part.color.blue);
+		shader.setVec3("baseColor", part.color.r, part.color.g, part.color.b);
 		glDrawElements(GL_TRIANGLES, part.count, GL_UNSIGNED_INT, (void*)(part.start * sizeof(unsigned int)));
 	}
 

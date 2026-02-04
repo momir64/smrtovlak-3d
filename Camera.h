@@ -25,8 +25,6 @@ class Camera : public MouseListener {
 
 	CameraMode mode;
 	CameraMode previousMode;
-	bool spaceWasPressed;
-	bool eWasPressed;
 
 	float followYawOffset;
 	float followPitchOffset;
@@ -47,4 +45,6 @@ public:
 
 	void setMode(CameraMode newMode);
 	CameraMode getMode() const;
+
+	void reset();
 };

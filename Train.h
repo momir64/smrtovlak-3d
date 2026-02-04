@@ -6,17 +6,19 @@
 #include <vector>
 
 enum class TrainMode {
-	WAITING = 0,
-	RUNNING = 1,
-	EMERGENCY_STOP = 2,
-	SICK_MODE = 3
+	WAITING,
+	RUNNING,
+	EMERGENCY_STOP,
+	SICK_MODE,
+	FINISHED
 };
 
 class Train {
 	float offset, currentSpeed, preStopSpeed, stopDistance;
-	TrainMode mode = TrainMode::RUNNING;
+	TrainMode mode = TrainMode::WAITING;
 	std::vector<Character> characters;
 	const Tracks& tracks;
+	int charactersCount;
 	float sleepTimer;
 	TrainCar car;
 	Model belt;
@@ -26,11 +28,18 @@ class Train {
 public:
 	Train(const Tracks& tracks);
 
+	void draw(const Shader& shader, bool cameraInTrain) const;
 	void update(float delta);
-	void draw(const Shader& shader) const;
 
-	OrientedPoint getFrontCarTransform() const;
-	void triggerEmergencyStop(float distance);
-	void toggleBelt(int seatNumber);
+	OrientedPoint getCameraTransform() const;
+	void buckleUp(int seatNumber);
 	void shuffleCharacters();
+
+	TrainMode getMode() const;
+	void setMode(TrainMode newMode);
+	void makeSick(int seatNumber);
+	int getCharactersCount() const;
+	void addCharacter();
+	void start();
+	void reset();
 };
