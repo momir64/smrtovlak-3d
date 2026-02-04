@@ -5,10 +5,19 @@
 #include "Shader.h"
 #include <vector>
 
+enum class TrainMode {
+	WAITING = 0,
+	RUNNING = 1,
+	EMERGENCY_STOP = 2,
+	SICK_MODE = 3
+};
+
 class Train {
+	float offset, currentSpeed, preStopSpeed, stopDistance;
+	TrainMode mode = TrainMode::RUNNING;
 	std::vector<Character> characters;
 	const Tracks& tracks;
-	float offset;
+	float sleepTimer;
 	TrainCar car;
 	Model belt;
 
@@ -21,6 +30,7 @@ public:
 	void draw(const Shader& shader) const;
 
 	OrientedPoint getFrontCarTransform() const;
+	void triggerEmergencyStop(float distance);
 	void toggleBelt(int seatNumber);
 	void shuffleCharacters();
 };

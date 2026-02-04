@@ -4,9 +4,13 @@
 #include <cmath>
 
 namespace {
-	constexpr float TRAIN_START_OFFSET = -3.8f, TRAIN_CAR_SPACE = 9.0f;
-	constexpr float TRAIN_SPEED = 0.0f;
+	constexpr float TRAIN_START_OFFSET = -3.8f, TRAIN_CAR_SPACE = 8.6f;
 	constexpr int TRAIN_CAR_COUNT = 4;
+
+	constexpr float TRAIN_MIN_SPEED = 7.2f, TRAIN_MAX_SPEED = 64.0f, TRAIN_MAX_SPEED_SICK = 5.0f;
+	constexpr float FINISH_SLOWDOWN_DISTANCE = 80.0f, FINISH_SLOWDOWN_DISTANCE_SICK = 40.0f;
+	constexpr float TRAIN_FLAT_ACCEL = 10.0f, TRAIN_SLOPE_FACTOR = 24.0f;
+	constexpr float SLOWDOWN_DISTANCE = 50.0f, FINISHED_DISTANCE = 0.05f;
 
 	constexpr float CAMERA_FORWARD_OFFSET = 1.0f, CAMERA_HEIGHT_OFFSET = 5.0f;
 
@@ -26,7 +30,8 @@ namespace {
 }
 
 Train::Train(const Tracks& tracks)
-	: tracks(tracks), offset(TRAIN_START_OFFSET), belt(Model(BELT_MODEL_PATH, BELT_SCALE, BELT_BRIGHTNESS)) {
+	: offset(TRAIN_START_OFFSET), currentSpeed(0.0f), sleepTimer(0.0f), preStopSpeed(0.0f), stopDistance(0.0f),
+	tracks(tracks), belt(Model(BELT_MODEL_PATH, BELT_SCALE, BELT_BRIGHTNESS)) {
 
 	for (int i = 0; i < TRAIN_CAR_COUNT; i++) {
 		characters.push_back(Character(belt, CHARACTER_MODELS[i * 2], true));
@@ -44,8 +49,14 @@ OrientedPoint Train::getCarTransform(int carIndex) const {
 	size_t n = tracks.points.size(), idx = 0;
 
 	float targetDist = offset - carIndex * TRAIN_CAR_SPACE;
-	while (targetDist < 0.0f) targetDist += totalLength;
-	while (targetDist >= totalLength) targetDist -= totalLength;
+	if (offset < totalLength + TRAIN_START_OFFSET - FINISH_SLOWDOWN_DISTANCE) {
+		while (targetDist < 0.0f) targetDist += totalLength;
+		while (targetDist >= totalLength) targetDist -= totalLength;
+	} else {
+		if (targetDist < 0.0f) targetDist = 0.0f;
+		if (targetDist >= totalLength) targetDist = totalLength - 0.01f;
+	}
+
 	while (idx < n && tracks.points[idx].distance <= targetDist) ++idx;
 
 	const auto& point = tracks.points[idx ? idx - 1 : 0];
@@ -78,9 +89,116 @@ void Train::shuffleCharacters() {
 
 void Train::update(float delta) {
 	if (tracks.points.empty()) return;
-	offset += delta * TRAIN_SPEED;
+	if (delta > 0.5f) delta = 0.016f;
+
+	if (sleepTimer > 0.0f) {
+		sleepTimer -= delta;
+		return;
+	}
+
 	float totalLength = tracks.points.back().distance;
-	if (offset >= totalLength) offset = std::fmod(offset, totalLength);
+
+	if (mode == TrainMode::RUNNING) {
+		std::vector<float> carSpeeds(TRAIN_CAR_COUNT, currentSpeed);
+
+		for (int i = 0; i < TRAIN_CAR_COUNT; i++) {
+			float targetDist = offset - i * TRAIN_CAR_SPACE;
+			while (targetDist < 0.0f) targetDist += totalLength;
+			while (targetDist >= totalLength) targetDist -= totalLength;
+
+			size_t idx = 0;
+			while (idx < tracks.points.size() && tracks.points[idx].distance <= targetDist) ++idx;
+			const auto& point = tracks.points[idx ? idx - 1 : 0];
+
+			float slope = -std::sin(point.pitch);
+			float accel = TRAIN_FLAT_ACCEL + slope * TRAIN_SLOPE_FACTOR;
+			if (carSpeeds[i] < TRAIN_MIN_SPEED) accel = TRAIN_SLOPE_FACTOR;
+
+			carSpeeds[i] += accel * delta;
+			carSpeeds[i] = std::clamp(carSpeeds[i], 0.0f, TRAIN_MAX_SPEED);
+
+			float endDist = totalLength + TRAIN_START_OFFSET;
+			float remaining = endDist - offset;
+
+			if (remaining <= FINISH_SLOWDOWN_DISTANCE) {
+				float t = std::clamp(remaining / FINISH_SLOWDOWN_DISTANCE, 0.0f, 1.0f);
+				carSpeeds[i] = preStopSpeed * std::pow(t, 0.82f);
+
+				if (remaining <= FINISHED_DISTANCE) {
+					carSpeeds[i] = 0.0f;
+					offset = endDist;
+
+					for (auto& chr : characters)
+						if (chr.showBelt) chr.showBelt = false;
+
+					mode = TrainMode::WAITING;
+					return;
+				}
+			} else {
+				preStopSpeed = currentSpeed;
+			}
+		}
+
+		if (!carSpeeds.empty()) {
+			float weightedSum = 0.0f;
+			float totalWeight = 0.0f;
+			int count = carSpeeds.size();
+
+			for (int i = 0; i < count; i++) {
+				float weight = float(count - i);
+				weightedSum += carSpeeds[i] * weight;
+				totalWeight += weight;
+			}
+
+			currentSpeed = weightedSum / totalWeight;
+			offset += currentSpeed * delta;
+		}
+	} else if (mode == TrainMode::EMERGENCY_STOP) {
+		float remaining = stopDistance - offset;
+		float t = std::clamp(remaining / SLOWDOWN_DISTANCE, 0.0f, 1.0f);
+		currentSpeed = preStopSpeed * std::pow(t, 0.82f);
+
+		if (remaining <= FINISHED_DISTANCE) {
+			offset = stopDistance;
+			currentSpeed = 0.0f;
+			sleepTimer = 10.0f;
+			mode = TrainMode::SICK_MODE;
+		}
+
+		offset += currentSpeed * delta;
+	} else if (mode == TrainMode::SICK_MODE) {
+		float accel = TRAIN_FLAT_ACCEL;
+		currentSpeed += accel * delta;
+		currentSpeed = std::clamp(currentSpeed, 0.0f, TRAIN_MAX_SPEED_SICK);
+
+		float endDist = totalLength + TRAIN_START_OFFSET;
+		float remaining = endDist - offset;
+
+		if (remaining <= FINISH_SLOWDOWN_DISTANCE_SICK) {
+			float t = std::clamp(remaining / FINISH_SLOWDOWN_DISTANCE_SICK, 0.0f, 1.0f);
+			currentSpeed = preStopSpeed * std::pow(t, 0.7f);
+
+			if (remaining <= FINISHED_DISTANCE) {
+				currentSpeed = 0.0f;
+				offset = endDist;
+				for (auto& chr : characters)
+					if (chr.showBelt) chr.showBelt = false;
+
+				mode = TrainMode::WAITING;
+				return;
+			}
+		} else {
+			preStopSpeed = currentSpeed;
+		}
+
+		offset += currentSpeed * delta;
+	}
+}
+
+void Train::triggerEmergencyStop(float distance) {
+	stopDistance = distance;
+	preStopSpeed = currentSpeed;
+	mode = TrainMode::EMERGENCY_STOP;
 }
 
 void Train::draw(const Shader& shader) const {
@@ -91,15 +209,14 @@ void Train::draw(const Shader& shader) const {
 
 	for (int i = 0; i < TRAIN_CAR_COUNT; ++i) {
 		float targetDist = offset - i * TRAIN_CAR_SPACE;
-		while (targetDist < 0.0f) targetDist += totalLength;
+
+		if (offset < totalLength + TRAIN_START_OFFSET - FINISH_SLOWDOWN_DISTANCE)
+			while (targetDist < 0.0f) targetDist += totalLength;
+		else
+			targetDist = std::clamp(targetDist, 0.0f, totalLength - 0.01f);
 
 		size_t idx = 0;
-		for (size_t j = 0; j < n; ++j) {
-			if (tracks.points[j].distance <= targetDist)
-				idx = j;
-			else
-				break;
-		}
+		while (idx + 1 < n && tracks.points[idx + 1].distance <= targetDist) idx++;
 
 		const auto& p = tracks.points[idx];
 		car.draw(shader, p.center, p.perp, p.pitch);
