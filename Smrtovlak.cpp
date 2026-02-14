@@ -16,7 +16,6 @@ Smrtovlak::Smrtovlak()
 	tracks("smrtovlak.track"),
 	train(tracks) {
 
-	glEnable(GL_DEPTH_TEST);
 	glClearColor(SKY_COLOR.r, SKY_COLOR.g, SKY_COLOR.b, 1.0f);
 
 	window.setResizeListener(this);
